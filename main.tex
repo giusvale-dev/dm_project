@@ -31,9 +31,40 @@
 	This project aims to develop a data warehouse system specifically designed to integrate and analyze data on meteorite landings using NASA's Meteorite Landings dataset. The project’s objective is to demonstrate how to design and implement a data warehouse on a relational database platform using Postgres SQL. The process involves the application of Extract, Transform, Load (ETL) techniques to systematically collect, clean, and organize the data. Additionally, the project employs a Dimensional Fact Model (DFM) schema to structure the data in a way that supports in-depth analysis. \\ The result is a powerful tool for advancing the study of meteorites and their impacts on Earth.
 	
 	\section{Data warehouse}
-	A data warehouse (DWH), is a system used for reporting and data analysis, are central repositories of integrated data from one or more sources. They store current and historical data in one single place that are used for creating reports. This is beneficial for companies as it enables them to interrogate and draw insights from their data and make decisions.
+	A data warehouse (DWH), is a system used for reporting and make data analysis. Is a central repository of integrated data from one or more sources (dataset or data source). They store current and historical data in one single place that are used for creating reports. This is beneficial for companies as it enables them to interrogate and draw insights from their data and make decisions.
 
-	\section{Datasets}
+	\section{System Architecture}
+	The DWH architecture in general is composed by the following components:
+	\begin{itemize}
+		\item \textbf{Datasets:} are collections of structured data organized to support reporting, analysis, and decision-making. These datasets are derived from various sources and are typically organized in a way that optimizes them for querying and analysis. 
+		\item \textbf{ETL:} stands for Extract, Transform, Load, which is a process used in data warehousing to move data from source systems to a data warehouse.
+		\item \textbf{Primary DWH:} refers to the central, most important repository where an organization consolidates, stores, and manages its key business data for analysis and reporting. It is designed to support decision-making processes by providing a comprehensive view of data from various sources.
+		\item \textbf{Data mart:} is a specialized subset of a DWH, designed to focus on a specific business area, department, or function. It is essentially a smaller, more focused version of a DWH that serves the needs of particular users or business units. 
+		\item \textbf{Reconcilied data (three layer architecture only):} refers to data that has been verified, adjusted, and aligned to ensure consistency, accuracy, and completeness across various sources or systems. The process of reconciling data involves comparing and aligning data from different sources to resolve discrepancies and ensure that the data is accurate and reliable.
+	\end{itemize}
+	
+	The components are organized in a two or three layers architecture: 	
+	\subsection{Two-Layer Architecture (2LA)}
+	The 2LA is an architecture composed by two mainly elements, the sources and the DWH. In this architecture the data marts are considerated as the "presentation layer" of the architecture. This architecture is very useful in organization from mid to large size. \\
+	\subsection{Three-Layer Architecture (3LA)}
+	In this architecture there is an additional layer, the reconcilied data layer, that it creates a common reference data model for a whole enterprise. At the same time, it sharply separates the problems of source data extraction and integration from those of DWH population. However the reconciled data leads to more replication of operational source data and the	design process is complicated. \\
+			
+	\subsection{Meteorite Landings - Architecture}
+	\begin{figure}[htpb]
+		\centering
+		\includegraphics[width=\columnwidth]{images/system_architecture.png}
+		\caption{Meteorite Landings System Architecture}
+		\label{fig:Meteorite Landings System Architecture}
+	\end{figure}
+	We consider that for our purpose is better to use the 2LA, because we have not many data sources and then we can achieve the same result in this most simple way, because we can manage the enteire DWH system without using the Reconcilied Data.  In our architecture we identified the following components:
+	\begin{itemize}
+		\item \textbf{Datasets: (Meteorite Landings, Meteoritical Bulletin, Socrata Location)}
+		\item \textbf{ETL: (extract.py, transform.py, load.py)}
+		\item \textbf{Primary DWH: PostgreSQL}
+		\item \textbf{Data marts: out of scope}  
+	\end{itemize}
+	
+	\section{Source Layer}
 	
 	\subsection{Meteorite Landings Dataset}
 	This comprehensive data set from The Meteoritical Society contains information on all of the known meteorite landings. The Fusion Table is collected by Javier de la Torre and we've also provided an XLS file that consists of 34,513 meteorites. \\
@@ -46,54 +77,9 @@
 	\subsection{Socrata Location}
 	Dataset used to revert the coordinate point from latitude,longitude to human readable format.
 	\href{https://dev.socrata.com/docs/datatypes/location.html#}{Tyler Technologies - Socdata}
-	
-	\section{System Architecture}
-	The first techincal choise is the system architecture to realize, typically between the two-layer and three-layer architecture, for this reason we have a brief of the how the two architectures are composed:
-	
-	\subsection{Two-Layer Architecture (2LA)}
-	\begin{figure}[h]
-		\centering
-		\includegraphics[width=\columnwidth]{images/two_layer_architecture.png}
-		\caption{Two Layer Architecture}
-		\label{fig:two layer architecture}
-	\end{figure}
-	The 2LA is an architecture composed by two mainly elements, the sources and the DWH.
-	In this architecture the data marts (a simple form of a DWH that is focused on a single subject, hence they draw data from a limited number of sources such as sales, finance or marketing) from an architectural point of view are considerated as the presentation layer of the architecture.
-	This architecture is very useful in organization from mid to large size and has the folowing advantages:
-	\begin{itemize}[leftmargin=1cm]
-		\item \textbf{Reliable Data Access:} DWH ensure that high-quality information is consistently available, even if the source systems are temporarily inaccessible due to technical or organizational issues.
-		
-		\item \textbf{Uninterrupted Operations:} Analytical queries in a DWH don't interfere with the daily transactional processes, which are critical for the smooth functioning of an organization's operations.
-		
-		\item \textbf{Structured for Analysis:} DWH are organized using a multidimensional model, which is more suitable for analysis, unlike the relational or semi-structured models typically used in operational systems.
-		
-		\item \textbf{Time and Granularity Differences:} DWH manage historical and summarized data for analysis, unlike OLTP systems that handle current, highly detailed data, highlighting a difference in time and data granularity.
-		
-		\item \textbf{Optimized for Performance:} DWH are designed with specific features to enhance the performance of analysis and reporting, ensuring faster and more efficient data processing.
-	\end{itemize}
-	
-	
-	\subsection{Three-Layer Architecture}
-	\begin{figure}[h]
-		\centering
-		\includegraphics[width=\columnwidth]{images/three_layer_architecture.png}
-		\caption{Three Layer Architecture}
-		\label{fig:two layer architecture}
-	\end{figure}
-	
-	
-	\subsection{Overview}
-	The data warehouse system is designed to integrate, store, and analyze data from the selected datasets. The system architecture includes the following components:
-	
-	\begin{itemize}
-		\item \textbf{Data Extraction:} Data is extracted from NASA, IGNV, and GDIS sources.
-		\item \textbf{Data Transformation:} Geocoding and data cleaning processes are applied to standardize the data formats.
-		\item \textbf{Data Loading:} The cleaned data is loaded into a relational database system such as MySQL or PostgreSQL.
-		\item \textbf{Data Analysis:} SQL queries and data visualization techniques are used to uncover patterns and correlations.
-	\end{itemize}
-		
-	\section{ETL Process}
-	
+				
+	\section{ETL tools}
+	The tools are developed in python, each of them has a specific goal and we would dockeraize our python scripts to allowing an horizontal scale-up in case of the data to elaborate grows or we need more computation in the trasforming or loading. We think this could be a good techincal choise in the application lifetime. This is the reason why we will use the dockers to run our scripts. For the same reason we would make a phisical separation of each software/script, each of them should resolve only one task.   
 	\subsection{Extract}
 	Data extraction scripts are written in Python, using libraries like `pandas` to read and process data files.
 	
@@ -103,9 +89,11 @@
 	\subsection{Load}
 	The transformed data is loaded into the relational database using SQLAlchemy in Python, ensuring that all datasets are correctly integrated for analysis.
 	
-	\section{Dimensions Fact Model (DFM)}
+	\section{Data warehouse Layer}
 	
-	\section{Relational Database realization}
+	\subsection{Dimensions Fact Model (DFM)}
+	
+	\subsection{Relational Database realization}
 
 	\section{Conclusion}
 	
