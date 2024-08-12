@@ -50,24 +50,26 @@
 	In this architecture there is an additional layer, the reconcilied data layer, that it creates a common reference data model for a whole enterprise. At the same time, it sharply separates the problems of source data extraction and integration from those of DWH population. However the reconciled data leads to more replication of operational source data and the	design process is complicated. \\
 			
 	\subsection{Meteorite Landings - Architecture}
+	We consider that, for our purposes, it is better to use the 2LA because we do not have many data sources, the ETL process is simple, and it can be managed on the fly. However, it is important to consider that in a real scenario, a good choice would be to use a 3LA. With this architecture, it is possible to separate Data Staging from Data Loading through the Reconciled Data Layer. This allows for the design of simpler and more efficient ETL tools, each focused on solving one specific task (e.g., \texttt{extract.py}, \texttt{transform.py}, \texttt{load.py}). Additionally, using containerized technologies like Kubernetes or Docker can enable horizontal scaling of these tools, allowing the system to be reactive in case of increased computational load or growth in the data sources.\\ For simplicity, we use Docker to distribute the application in the simplest way possible, but this does not mean that the application is scalable.\\
+	As shown in Figure~\ref{fig:Meteorite Landings System Architecture}, we have the following components in our Architecture:
+	\begin{itemize}
+		\item \textbf{Datasets: (Meteorite Landings, Meteoritical Bulletin, Socrata Location)}
+		\item \textbf{ETL: (meteorite\_landings\_etl)}
+		\item \textbf{Primary DWH: PostgreSQL}
+		\item \textbf{Data marts: out of scope}  
+	\end{itemize}
 	\begin{figure}[htpb]
 		\centering
 		\includegraphics[width=\columnwidth]{images/system_architecture.png}
 		\caption{Meteorite Landings System Architecture}
 		\label{fig:Meteorite Landings System Architecture}
 	\end{figure}
-	We consider that for our purpose is better to use the 2LA, because we have not many data sources and then we can achieve the same result in this most simple way, because we can manage the enteire DWH system without using the Reconcilied Data.  In our architecture we identified the following components:
-	\begin{itemize}
-		\item \textbf{Datasets: (Meteorite Landings, Meteoritical Bulletin, Socrata Location)}
-		\item \textbf{ETL: (extract.py, transform.py, load.py)}
-		\item \textbf{Primary DWH: PostgreSQL}
-		\item \textbf{Data marts: out of scope}  
-	\end{itemize}
 	
 	\section{Source Layer}
 	
 	\subsection{Meteorite Landings Dataset}
-	This comprehensive data set from The Meteoritical Society contains information on all of the known meteorite landings. The Fusion Table is collected by Javier de la Torre and we've also provided an XLS file that consists of 34,513 meteorites. \\
+	\label{subsec:meteorite landings data set}
+	This comprehensive data set from The Meteoritical Society contains information on all of the known meteorite landings. The Fusion Table is collected by Javier de la Torre and we've also provided an XLS file that consists of 34.513 meteorites. \\
 	\href{https://data.nasa.gov/Space-Science/Meteorite-Landings/gh4g-9sfh/about_data}{NASA's Open Data Portal}
 	
 	\subsection{Meteoritical Bulletin Database}
@@ -79,9 +81,16 @@
 	\href{https://dev.socrata.com/docs/datatypes/location.html#}{Tyler Technologies - Socdata}
 				
 	\section{ETL tools}
-	The tools are developed in python, each of them has a specific goal and we would dockeraize our python scripts to allowing an horizontal scale-up in case of the data to elaborate grows or we need more computation in the trasforming or loading. We think this could be a good techincal choise in the application lifetime. This is the reason why we will use the dockers to run our scripts. For the same reason we would make a phisical separation of each software/script, each of them should resolve only one task.   
+	The ETL process is achieved using \textbf{meteorite\_landings\_etl}.\\ It is a software developed in Python containing the following modules:
+	\begin{itemize}
+		\item \textbf{extract} - Reads the data from the dataset \ref{subsec:meteorite landings data set}
+		\item \textbf{transform} - Reads the data rows from the extract module and therefore it is responsible to make cleaning and trasformation the data, using the other datasets and the information meta-data.
+		\item \textbf{load} - Reads the row data updated by the trasform module, then load them in the DWH database 
+	\end{itemize}
+	The details are described in the following sections.
 	\subsection{Extract}
-	Data extraction scripts are written in Python, using libraries like `pandas` to read and process data files.
+    Extraction is the process that allows us to obtain data from sources, and we know that this operation can be either static (generally used when the DWH needs to be populated for the first time) or incremental (used to update the DWH regularly). Since our datasets are not updated at regular intervals, we have decided to implement only static extraction. If an update is required, we will back up the previous DWH and then populate a new DWH system.\\ The extraction will return the following data rows:
+    
 	
 	\subsection{Transform}
 	The transformation process includes converting geo-coordinates to human-readable formats and normalizing data formats across all datasets.
