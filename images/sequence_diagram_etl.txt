@@ -1,0 +1,19 @@
+@startuml
+autonumber
+ETL_Script -> Extractor : retrieve_data
+Extractor -> NASA : request_data
+Extractor <- NASA : json_data
+ETL_Script <- Extractor : json_data
+ETL_Script -> Transformer : transform_json_data
+Transformer -> Transformer: clean_data
+Transformer -> Transformer: transform_data
+Transformer -> "Socrata Locator": get_location_by_lat_long
+Transformer <- "Socrata Locator": location
+Transformer -> Transformer: transform_data
+ETL_Script <- Transformer : transformed_data
+ETL_Script -> Loader : load_transformed_data
+Loader -> Loader : ORM_DAO_mapping
+database Database as DWH
+Loader-> DWH : Load
+ETL_Script <- Loader: Done
+@enduml

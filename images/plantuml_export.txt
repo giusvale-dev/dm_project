@@ -1,0 +1,32 @@
+@startuml
+
+class "Extractor" as class1 {
+   nasa_dataset: string
+   __init__(self, dataset)
+   extract(int init, int offset): List<MeteoriteLandingRough>
+   extract_all(): List<MeteoriteLandingRough>
+}
+class "MeteoriteLandingRough" as class2 {
+   id: string
+   name: string
+   name_type: string
+   recclass:string
+   mass:float
+   fall:string
+   year:string
+   reclat:float
+   reclong:float
+   __init__(self, id, name, name_type, recclass, mass, fall, year, reclat, reclong)
+}
+class "Transformer" as class3 {
+   dataset_locator: string
+   __init__(self, List<MeteoriteLandingRough> lst)
+   trasform(): List<MeteoriteLanding>
+}
+class "MeteoriteLanding" as class4
+class1 --o{  class2
+class3 --|{ class2
+class3 --o{  class4
+
+
+@enduml

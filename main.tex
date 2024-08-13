@@ -8,6 +8,7 @@
 \usepackage{booktabs} % For better tables
 \usepackage{listings} % For code listings
 \usepackage{multirow} % For multi-row cells in tables
+\usepackage{float} % For float image
 
 \begin{document}
 	
@@ -23,21 +24,26 @@
 	\maketitle
 	
 	\begin{abstract}
-			This project focuses on developing a data warehouse system to integrate and analyze meteorite landing data from NASA. The objective is to demonstrate how to design and implement a data warehouse on a relational database using ETL processes, a dimensional fact model (DFM) schema, and Postgres SQL for deployment. 
+			This project focuses on designing and developing a data warehouse (DWH) system to integrate and analyze meteorite landing data from NASA. The objective is to demonstrate the design and implementation of a data warehouse using a relational database (PostgreSQL), starting from the datasets.
 	\end{abstract}
 	
 	\section{Introduction}
 	
-	This project aims to develop a data warehouse system specifically designed to integrate and analyze data on meteorite landings using NASA's Meteorite Landings dataset. The project’s objective is to demonstrate how to design and implement a data warehouse on a relational database platform using Postgres SQL. The process involves the application of Extract, Transform, Load (ETL) techniques to systematically collect, clean, and organize the data. Additionally, the project employs a Dimensional Fact Model (DFM) schema to structure the data in a way that supports in-depth analysis. \\ The result is a powerful tool for advancing the study of meteorites and their impacts on Earth.
+	This project aims to design and develop a DWH system specifically to integrate and analyze meteorite landing data using NASA's Meteorite Landings dataset. The first section focuses on both the design and development of the DWH, beginning with the Dimensional Fact Model (DFM), followed by the implementation of the Star Schema and the database itself. The second section is dedicated to the system architecture, detailing the components used, including the Extraction, Transformation, and Loading (ETL) processes, and how these tools are implemented. Docker containers are utilized to manage the DWH system, providing portability and simplicity. The final section contains the Git repository with the source code used for this project.
 	
-	\section{Data warehouse}
-	A data warehouse (DWH), is a system used for reporting and make data analysis. Is a central repository of integrated data from one or more sources (dataset or data source). They store current and historical data in one single place that are used for creating reports. This is beneficial for companies as it enables them to interrogate and draw insights from their data and make decisions.\\ The data stored in the DWH is uploaded from operational systems but before pass through a process to ensure data quality before to use the DWH analysis (ETL process).\\ The DWH is a multidimensional model represented in \textbf{facts} that are the subject of analysis represented as cubes, where:
+	\section{Data Warehouse}
+	A DWH is a system used for reporting and data analysis. It serves as a central repository of integrated data from one or more sources (datasets or data sources). It stores both current and historical data in a single location, which is used for generating reports. This is beneficial for companies as it enables them to query and draw insights from their data, facilitating informed decision-making.
+
+	The data stored in the DWH is uploaded from operational systems but first undergoes a process to ensure data quality before being used in DWH analysis (ETL process).
+
+	The DWH employs a multidimensional model represented in \textbf{facts} that are subjects of analysis and represented as cubes, where:
 	\begin{itemize}
-		\item Each cell contains numerical \textbf{measures} (quantifing the fact from one point of view)
-		\item Each axis represents a \textbf{dimension} of interest for analysis
-		\item Each dimension can be associated with a \textbf{hierarchy of dimensional attributes} used to aggregate data stored into cubes.
+		\item Each cell contains numerical \textbf{measures} (quantifying the fact from one perspective).
+		\item Each axis represents a \textbf{dimension} of interest for analysis.
+		\item Each dimension can be associated with a \textbf{hierarchy of dimensional attributes} used to aggregate data stored in the cubes.
 	\end{itemize}
-	To read information in the DWH are used four methodologies:
+
+	To retrieve information from the DWH, four methodologies are used:
 	\begin{itemize}
 		\item Reports
 		\item Dashboards
@@ -46,52 +52,56 @@
 	\end{itemize}
 	 
 	\section{Requirements}
-	We are interesting to make analisys on meterotite landings, for this reason we use the following information:
+	\label{sec:requirements}
+	We are interested in analyzing meteorite landings; for this reason, we use the following information:
 	\begin{itemize}
-		\item \textbf{Measure:} Meteorite mass in grams 
+		\item \textbf{Measure:} Meteorite mass in grams
 		\item \textbf{Dimensions:} Time, Location, Meteorite Classification
 	\end{itemize}
-	
 	\section{Dimensional Fact Model (DFM)}
+	Starting from section\ref{sec:requirements} we designed the DFM model shown in Figure \ref{fig:Meteorite Landings System Architecture}. \\This figure illustrates the use of dimensional hierarchies for all dimensions, as well as optional dimension values.
 	\begin{figure}[htpb]
 		\centering
 		\includegraphics[width=\columnwidth]{images/dfm_schema.png}
 		\caption{Meteorite Landings System Architecture}
 		\label{fig:Meteorite Landings System Architecture}
 	\end{figure}
-	To design a DWH system the DFM schema is required and through it we can model facts, measures, dimensions and hierarchies. \\
 	\section{Star Schema}
 	A multidimensional structure can be represented using two distinct logical models:
 	\begin{itemize}
 		\item MOLAP (Multidimensional On-Line Analytical Processing)
 		\item ROLAP (Relational On-Line Analytical Processing)
 	\end{itemize}
-	For our purpose we use the ROLAP model using the start schema. Therefore we can design the star schema for our DFM model:
+	For our purpose we used the ROLAP model with the star schema.\\ Figure \ref{fig:Meteorite Landings Star Schema} describe the translation from the DFM to the Start Schema using the literature:
+	\begin{figure}[htpb]
+		\centering
+		\includegraphics[width=\columnwidth]{images/star_schema.png}
+		\caption{Meteorite Landings Star Schema}
+		\label{fig:Meteorite Landings Star Schema}
+	\end{figure}
 	
 	\section{System Architecture}
-	The DWH architecture in general is composed by the following components:
+	The DWH architecture generally comprises the following components:
 	\begin{itemize}
-		\item \textbf{Datasets:} are collections of structured data organized to support reporting, analysis, and decision-making. These datasets are derived from various sources and are typically organized in a way that optimizes them for querying and analysis. 
-		\item \textbf{ETL:} stands for Extract, Transform, Load, which is a process used in data warehousing to move data from source systems to a data warehouse.
-		\item \textbf{Primary DWH:} refers to the central, most important repository where an organization consolidates, stores, and manages its key business data for analysis and reporting. It is designed to support decision-making processes by providing a comprehensive view of data from various sources.
-		\item \textbf{Data mart:} is a specialized subset of a DWH, designed to focus on a specific business area, department, or function. It is essentially a smaller, more focused version of a DWH that serves the needs of particular users or business units. 
-		\item \textbf{Reconcilied data (three layer architecture only):} refers to data that has been verified, adjusted, and aligned to ensure consistency, accuracy, and completeness across various sources or systems. The process of reconciling data involves comparing and aligning data from different sources to resolve discrepancies and ensure that the data is accurate and reliable.
+		\item \textbf{Datasets:} Collections of structured data organized to support reporting, analysis, and decision-making. These datasets are derived from various sources and are typically arranged to optimize querying and analysis.
+		\item \textbf{ETL:} Stands for Extract, Transform, Load. It is a process used in data warehousing to move data from source systems to the data warehouse.
+		\item \textbf{Primary DWH:} Refers to the central repository where an organization consolidates, stores, and manages its key business data for analysis and reporting. It is designed to support decision-making by providing a comprehensive view of data from various sources.
+		\item \textbf{Data Mart:} A specialized subset of a DWH, designed to focus on a specific business area, department, or function. It is essentially a smaller, more focused version of a DWH that serves the needs of particular users or business units.
+		\item \textbf{Reconciled Data (three-layer architecture only):} Refers to data that has been verified, adjusted, and aligned to ensure consistency, accuracy, and completeness across various sources or systems. The process of reconciling data involves comparing and aligning data from different sources to resolve discrepancies and ensure that the data is accurate and reliable.
 	\end{itemize}
 	
-	The components are organized in a two or three layers architecture: 	
+	The components are organized in either a two-layer or a three-layer architecture:	
 	\subsection{Two-Layer Architecture (2LA)}
-	The 2LA is an architecture composed by two mainly elements, the sources and the DWH. In this architecture the data marts are considerated as the "presentation layer" of the architecture. This architecture is very useful in organization from mid to large size. \\
+	The 2LA consists of two main components: the data sources and the DWH. In this architecture, data marts are considered part of the "presentation layer." This architecture is particularly useful for mid-sized to large organizations.
 	\subsection{Three-Layer Architecture (3LA)}
-	In this architecture there is an additional layer, the reconcilied data layer, that it creates a common reference data model for a whole enterprise. At the same time, it sharply separates the problems of source data extraction and integration from those of DWH population. However the reconciled data leads to more replication of operational source data and the	design process is complicated. \\
+	In this architecture, there is an additional layer: the reconciled data layer. This layer creates a common reference data model for the entire enterprise. It also clearly separates the issues of source data extraction and integration from those of DWH population. However, the reconciled data approach can lead to increased replication of operational source data, and the design process can be more complex.
 			
 	\subsection{Meteorite Landings - Architecture}
-	We consider that, for our purposes, it is better to use the 2LA because we do not have many data sources, the ETL process is simple, and it can be managed on the fly. However, it is important to consider that in a real scenario, a good choice would be to use a 3LA. With this architecture, it is possible to separate Data Staging from Data Loading through the Reconciled Data Layer. This allows for the design of simpler and more efficient ETL tools, each focused on solving one specific task (e.g., \texttt{extract.py}, \texttt{transform.py}, \texttt{load.py}). Additionally, using containerized technologies like Kubernetes or Docker can enable horizontal scaling of these tools, allowing the system to be reactive in case of increased computational load or growth in the data sources.\\ For simplicity, we use Docker to distribute the application in the simplest way possible, but this does not mean that the application is scalable.\\
-	As shown in Figure~\ref{fig:Meteorite Landings System Architecture}, we have the following components in our Architecture:
+	For our purposes, we have opted to use the two-layer architecture (2LA) because we have a limited number of data sources, the ETL process is relatively simple, and it can be managed on the fly. However, in a real-world scenario, it would be advantageous to use a three-layer architecture (3LA). This architecture allows for the separation of Data Staging from Data Loading through the Reconciled Data Layer. Such separation facilitates the design of simpler and more efficient ETL tools, each focused on a specific task (e.g., \texttt{extract.py}, \texttt{transform.py}, \texttt{load.py}). Additionally, containerized technologies like Kubernetes or Docker can enable horizontal scaling of these tools, allowing the system to handle increased computational loads or growth in data sources more effectively.\\For simplicity, we use Docker to distribute the application in the most straightforward manner possible, but this does not imply that the application is scalable.\\As shown in Figure~\ref{fig:Meteorite Landings System Architecture}, our architecture includes the following components:
 	\begin{itemize}
-		\item \textbf{Datasets: (Meteorite Landings, Meteoritical Bulletin, Socrata Location)}
+		\item \textbf{Datasets: (Meteorite Landings, Socrata Location)}
 		\item \textbf{ETL: (meteorite\_landings\_etl)}
-		\item \textbf{Primary DWH: PostgreSQL}
-		\item \textbf{Data marts: out of scope}  
+		\item \textbf{Primary DWH: PostgreSQL}  
 	\end{itemize}
 	\begin{figure}[htpb]
 		\centering
@@ -104,31 +114,73 @@
 	
 	\subsection{Meteorite Landings Dataset}
 	\label{subsec:meteorite landings data set}
-	This comprehensive data set from The Meteoritical Society contains information on all of the known meteorite landings. The Fusion Table is collected by Javier de la Torre and we've also provided an XLS file that consists of 34.513 meteorites. \\
-	\href{https://data.nasa.gov/Space-Science/Meteorite-Landings/gh4g-9sfh/about_data}{NASA's Open Data Portal}
-	
-	\subsection{Meteoritical Bulletin Database}
-	This database has been constructed and is maintained by the Nomenclature Committee of the Meteoritical Society. The primary function of this database is to provide authoritative information about meteorite names. The correct spelling, complete with punctuation and diacritical marks, of all known meteorites recognized by the Meteoritical Society may be found in this compilation. Official abbreviations for many meteorites are documented here as well. The database also contains status information for meteorites with provisional names, and listings for specimens of doubtful origin and pseudometeorites. \\
-	\href{https://www.lpi.usra.edu/meteor/}{Lunar and Planetary Institute}
-	
+	This comprehensive dataset from The Meteoritical Society contains information on all known meteorite landings. The Fusion Table was compiled by Javier de la Torre, and we have also provided an XLS file containing data on 34,513 meteorites. For additional details, visit \href{https://data.nasa.gov/Space-Science/Meteorite-Landings/gh4g-9sfh/about_data}{NASA's Open Data Portal}
+		
 	\subsection{Socrata Location}
-	Dataset used to revert the coordinate point from latitude,longitude to human readable format.
+	\label{subsec:socrata_dataset}
+	The dataset is used to convert coordinate points from latitude and longitude to a human-readable format. For more information, see 
 	\href{https://dev.socrata.com/docs/datatypes/location.html#}{Tyler Technologies - Socdata}
 				
 	\section{ETL tools}
-	The ETL process is achieved using \textbf{meteorite\_landings\_etl}.\\ It is a software developed in Python containing the following modules:
+	The ETL process is carried out using \texttt{meteorite\_landings\_etl}.\\ This software, developed in Python, includes the following modules:
 	\begin{itemize}
-		\item \textbf{extract} - Reads the data from the dataset \ref{subsec:meteorite landings data set}
-		\item \textbf{transform} - Reads the data rows from the extract module and therefore it is responsible to make cleaning and trasformation the data, using the other datasets and the information meta-data.
-		\item \textbf{load} - Reads the row data updated by the trasform module, then load them in the DWH database 
+		\item \textbf{extract} - Reads data from the dataset described in section \ref{subsec:meteorite landings data set}
+		\item \textbf{transform} - Processes the data rows obtained from the Extract module. It is responsible for cleaning and transforming the data, using additional datasets and metadata information.
+		\item \textbf{load} - Takes the cleaned and transformed data from the Transform module and loads it into the DWH database.
 	\end{itemize}
-	The details are described in the following sections.
+	The ETL sequence diagram is shown in the figure \ref{fig:ETL Sequence Diagram}:
+	\begin{figure}[htpb]
+		\centering
+		\includegraphics[width=\columnwidth]{images/sequence_diagram_etl.png}
+		\caption{ETL Sequence Diagram}
+		\label{fig:ETL Sequence Diagram}
+	\end{figure}
+	
+	
+	Details of these modules are described in the following sections.
 	\subsection{Extract}
-    Extraction is the process that allows us to obtain data from sources, and we know that this operation can be either static (generally used when the DWH needs to be populated for the first time) or incremental (used to update the DWH regularly). Since our datasets are not updated at regular intervals, we have decided to implement only static extraction. If an update is required, we will back up the previous DWH and then populate a new DWH system.\\ The extraction will return the following data rows:
+    Extraction is the process that allows us to obtain data from sources, and we know that this operation can be either static (generally used when the DWH needs to be populated for the first time) or incremental (used to update the DWH regularly). Since our datasets are not updated at regular intervals, we have decided to implement only static extraction. If an update is required, we will back up the previous DWH and then populate a new DWH system.\\ The extractor has 2 mainly problems to solve:
+    \begin{itemize}
+    	\item Navigate through the API pagination, to retrieve all data
+    	\item Produce a rough parsed object contained all data read
+    \end{itemize}
     
+     The NASA dataset contains the information shown in the table \ref{tab:nasa_dataset}:
+    \begin{table}[httb]
+    	\centering
+    	\caption{Meteorite Landings dataset}
+    	\begin{tabular}{|p{1cm}|p{4cm}|p{1cm}|p{1cm}|}
+    		\hline
+    		\textbf{Name} & \textbf{Description} & \textbf{Field name} & \textbf{Datatype} \\ \hline
+    		name & Meteorite Name & name & Text \\ \hline
+    		id   & Meteorite Identifier  & id & Text \\ \hline
+    		nametype & Relict meteorite or valid & nametype & Text \\ \hline
+    		recclass & Meteorite Classification & recclass & Text \\ \hline
+    		mass & Meteorite Mass (grams) & mass & Number \\ \hline
+    		fall & Meteorite Fall on the earth or not & fall & Text \\ \hline
+    		year & Event data (FLoating timestamp) & year & Floating timestamp \\ \hline
+    		reclat & Latitude of the event & reclat & Text \\ \hline
+    		reclong & Longitude of the event & reclong & Text \\ \hline
+    	\end{tabular}
+    	\label{tab:nasa_dataset}
+    \end{table}
+	
+	To map the retrieved information we used the \texttt{MeteoriteLandingRough} object as shown in the Figure \ref{fig:MeteoriteLandingRough}.
+	\begin{figure}[htpb]
+		\centering
+		\includegraphics[width=\columnwidth]{images/meteorite_landing_rough_obj.png}
+		\caption{Meteorite Landing Rough Object}
+		\label{fig:MeteoriteLandingRough}
+	\end{figure}
 	
 	\subsection{Transform}
-	The transformation process includes converting geo-coordinates to human-readable formats and normalizing data formats across all datasets.
+	This task solve the following problems:
+	\begin{itemize}
+		\item Remove all null values
+		\item Convert the time in according to the dimension date
+		\item Convert the latitude/longitude in according to the dimension location through the dataset in section \ref{subsec:socrata_dataset}
+	\end{itemize}
+	After this process we have the list of the transformed data, where it is represented through the object shown in figure \ref{}
 	
 	\subsection{Load}
 	The transformed data is loaded into the relational database using SQLAlchemy in Python, ensuring that all datasets are correctly integrated for analysis.
@@ -143,8 +195,10 @@
 	
 	\section{Reference}
 	\begin{itemize}
+		\item \href{https://www.diag.uniroma1.it/~lenzerin/index.html/?q=node/53}{Data Management Course}
 		\item \href{https://web.pdx.edu/~ruzickaa/meteorites/papers/WeisbergEtal2006-classification.pdf}{Weisberg et al. (2006) Systematics and Evaluation of Meteorite Classification. In, Meteorites and the Early Solar System II, 19-52 (D.S. Lauretta and H.Y. McSween, Eds.), Univ. Arizona press}
-		 
+		\item \href{https://data.nasa.gov/Space-Science/Meteorite-Landings/gh4g-9sfh/about_data}{NASA's Open Data Portal}
+		\item \href{https://dev.socrata.com/docs/datatypes/location.html#}{Tyler Technologies - Socdata}
 	\end{itemize}
 	
 	
