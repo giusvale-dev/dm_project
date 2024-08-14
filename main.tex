@@ -168,7 +168,7 @@
 	To map the retrieved information we used the \texttt{MeteoriteLandingRough} object as shown in the Figure \ref{fig:MeteoriteLandingRough}.
 	\begin{figure}[htpb]
 		\centering
-		\includegraphics[width=\columnwidth]{images/meteorite_landing_rough_obj.png}
+		\includegraphics[width=\columnwidth]{images/meteorite_landing_rough.png}
 		\caption{Meteorite Landing Rough Object}
 		\label{fig:MeteoriteLandingRough}
 	\end{figure}
@@ -177,21 +177,51 @@
 	This task solve the following problems:
 	\begin{itemize}
 		\item Remove all null values
-		\item Convert the time in according to the dimension date
-		\item Convert the latitude/longitude in according to the dimension location through the dataset in section \ref{subsec:socrata_dataset}
+		\item Remove all useless values
+		\item Transform the time according with the dimension
+		\item Transform the latitude/longitude in according to the dimension location through the dataset in section \ref{subsec:socrata_dataset}
+		\item Transform the classification according with the dimension
 	\end{itemize}
-	After this process we have the list of the transformed data, where it is represented through the object shown in figure \ref{}
+	
+	At this step we decided to use the following raw object as shown in Figure \ref{fig:MeteoriteLandingRaw}
+	\begin{figure}[htpb]
+		\centering
+		\includegraphics[width=\columnwidth]{images/meteorite_landing_raw.png}
+		\caption{Meteorite Landing Raw Object}
+		\label{fig:MeteoriteLandingRaw}
+	\end{figure}
 	
 	\subsection{Load}
-	The transformed data is loaded into the relational database using SQLAlchemy in Python, ensuring that all datasets are correctly integrated for analysis.
+	The Loader is the module responsible to load the data on the DWH, this is the reason why we decided that this module builds the mapping between the database and the software. In the Figure \ref{fig: ORM_mapping} is illustrated the mapping between the database tables and the software classes.\\ We used \texttt{SQLAlchemy} library to manage the DB schema.\\ This module is responsabile to:
+	\begin{itemize}
+		\item Enstablish a database connection with the DWH
+		\item Mapping using the ORM approach the software layer with the database layer
+		\item Insert atomically the data retrieved from the Transaltor to the right tables
+	\end{itemize}
 	
-	\section{Data warehouse Layer}
-	
-	\subsection{Dimensions Fact Model (DFM)}
-	
-	\subsection{Relational Database realization}
-
+	\begin{figure}[htpb]
+		\centering
+		\includegraphics[width=\columnwidth]{images/uml_schema.png}
+		\caption{ORM - UML Schema}
+		\label{fig: ORM_mapping}
+	\end{figure}
+		
 	\section{Conclusion}
+	At the end of this work we have the DWH that can be queried through the SQL queries or other clients. For example it is possible to have a multidimensional view of data joining the fact table to its dimensions tables:\\
+	\begin{verbatim}
+		SELECT *
+		FROM Meteorite AS FT, 
+		Location AS DT1, 
+		Date AS DT2, 
+		Classification AS DT3
+		WHERE 
+		FT.Location = DT1.id AND 
+		FT.Date = DT2.id AND
+		FT.Classification = DT3.id
+	\end{verbatim}
+	
+	
+	\section{Source code}
 	
 	\section{Reference}
 	\begin{itemize}

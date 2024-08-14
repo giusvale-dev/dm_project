@@ -1,0 +1,18 @@
+@startuml
+class MeteoriteLandingRaw {
+  mass: float
+  location: [float, float]
+  city: string
+  state: string
+  country: string
+  classification: string
+  material_type: string
+  chemical_composition: string
+  clan: string
+  class: string
+  date: float
+  month: int
+  quarter: int
+  year: int
+  __init__(self, mass, location, city, state, country, classification, material_type, chemical_composition, clan, class, date, month, quarter, year)
+@enduml
