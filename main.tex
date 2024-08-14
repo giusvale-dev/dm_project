@@ -136,16 +136,15 @@
 		\label{fig:ETL Sequence Diagram}
 	\end{figure}
 	
-	
 	Details of these modules are described in the following sections.
 	\subsection{Extract}
     Extraction is the process that allows us to obtain data from sources, and we know that this operation can be either static (generally used when the DWH needs to be populated for the first time) or incremental (used to update the DWH regularly). Since our datasets are not updated at regular intervals, we have decided to implement only static extraction. If an update is required, we will back up the previous DWH and then populate a new DWH system.\\ The extractor has 2 mainly problems to solve:
     \begin{itemize}
     	\item Navigate through the API pagination, to retrieve all data
-    	\item Produce a rough parsed object contained all data read
+    	\item Produce the raw object contained all data read by NASA
     \end{itemize}
-    
-     The NASA dataset contains the information shown in the table \ref{tab:nasa_dataset}:
+    The Extractor class manages pagination by adjusting the offset parameter in its API requests. This ensures that all available data is retrieved by making multiple requests, each fetching a different segment of the data.
+    The NASA dataset contains the information shown in the table \ref{tab:nasa_dataset}:
     \begin{table}[httb]
     	\centering
     	\caption{Meteorite Landings dataset}
@@ -164,14 +163,15 @@
     	\end{tabular}
     	\label{tab:nasa_dataset}
     \end{table}
-	
-	To map the retrieved information we used the \texttt{MeteoriteLandingRough} object as shown in the Figure \ref{fig:MeteoriteLandingRough}.
+	For clarity, the API exposed by the \texttt{Extractor} class is shown in Figure \ref{fig:Extractor}. This figure provides a visual representation of the class's methods and their interactions with the NASA Meteorite Landings API.
 	\begin{figure}[htpb]
 		\centering
-		\includegraphics[width=\columnwidth]{images/meteorite_landing_rough.png}
-		\caption{Meteorite Landing Rough Object}
-		\label{fig:MeteoriteLandingRough}
+		\includegraphics[width=0.5\columnwidth]{images/Extractor.png}
+		\caption{Extractor Object}
+		\label{fig:Extractor}
 	\end{figure}
+
+    
 	
 	\subsection{Transform}
 	This task solve the following problems:
