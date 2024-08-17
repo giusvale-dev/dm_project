@@ -99,7 +99,7 @@
 	\subsection{Meteorite Landings - Architecture}
 	For our purposes, we have opted to use the two-layer architecture (2LA) because we have a limited number of data sources, the ETL process is relatively simple, and it can be managed on the fly. However, in a real-world scenario, it would be advantageous to use a three-layer architecture (3LA). This architecture allows for the separation of Data Staging from Data Loading through the Reconciled Data Layer. Such separation facilitates the design of simpler and more efficient ETL tools, each focused on a specific task (e.g., \texttt{extract.py}, \texttt{transform.py}, \texttt{load.py}). Additionally, containerized technologies like Kubernetes or Docker can enable horizontal scaling of these tools, allowing the system to handle increased computational loads or growth in data sources more effectively.\\For simplicity, we use Docker to distribute the application in the most straightforward manner possible, but this does not imply that the application is scalable.\\As shown in Figure~\ref{fig:Meteorite Landings System Architecture}, our architecture includes the following components:
 	\begin{itemize}
-		\item \textbf{Datasets: (Meteorite Landings, Socrata Location)}
+		\item \textbf{Datasets: (Meteorite Landings, Photon - Open Street Map)}
 		\item \textbf{ETL: (meteorite\_landings\_etl)}
 		\item \textbf{Primary DWH: PostgreSQL}  
 	\end{itemize}
@@ -116,10 +116,10 @@
 	\label{subsec:meteorite landings data set}
 	This comprehensive dataset from The Meteoritical Society contains information on all known meteorite landings. The Fusion Table was compiled by Javier de la Torre, and we have also provided an XLS file containing data on 34,513 meteorites. For additional details, visit \href{https://data.nasa.gov/Space-Science/Meteorite-Landings/gh4g-9sfh/about_data}{NASA's Open Data Portal}
 		
-	\subsection{Socrata Location}
-	\label{subsec:socrata_dataset}
+	\subsection{Photon - Open Street Map}
+	\label{subsec:open_street_map}
 	The dataset is used to convert coordinate points from latitude and longitude to a human-readable format. For more information, see 
-	\href{https://dev.socrata.com/docs/datatypes/location.html#}{Tyler Technologies - Socdata}
+	\href{https://photon.komoot.io/}{Photon - Open Street Map}
 				
 	\section{ETL tools}
 	The ETL process is carried out using \texttt{meteorite\_landings\_etl}.\\ This software, developed in Python, includes the following modules:
@@ -171,25 +171,74 @@
 		\label{fig:Extractor}
 	\end{figure}
 
-    
-	
 	\subsection{Transform}
-	This task solve the following problems:
-	\begin{itemize}
-		\item Remove all null values
-		\item Remove all useless values
-		\item Transform the time according with the dimension
-		\item Transform the latitude/longitude in according to the dimension location through the dataset in section \ref{subsec:socrata_dataset}
-		\item Transform the classification according with the dimension
-	\end{itemize}
+	This process is computed by the \texttt{Transformer} class that provide a suite of methods to perform the transform process.\\ This class needs the raw data from the \texttt{Executor} to perform the following tasks:
+	\begin{enumerate}
+		\item Remove all meteorites containing not valid values
+		\item Transform the filed \texttt{year} according with the dimension Date
+		\item Transform the coordinate according with the dimension location
+		\item Transform the classification according with the dimension classification
+	\end{enumerate}
 	
-	At this step we decided to use the following raw object as shown in Figure \ref{fig:MeteoriteLandingRaw}
+	\subsubsection{Remove all meteorites containing not valid values}
+	This task is computed by the private function \texttt{clean}. This method returns a \texttt{MeteoriteLandingRaw} if the object can be transformed or a null value if the object is not valid. This function checks if the required fields are not null, empty and if the Geo Location coordinates can be suitable or not (are in the continents boundary and are not in a remote area).
+	In figure \ref{fig:MeteoriteLandingRaw} is shown the \texttt{MeteoriteLandingRaw}
 	\begin{figure}[htpb]
 		\centering
 		\includegraphics[width=\columnwidth]{images/meteorite_landing_raw.png}
 		\caption{Meteorite Landing Raw Object}
 		\label{fig:MeteoriteLandingRaw}
 	\end{figure}
+	
+	
+	\subsubsection{Date transformation}
+	The transformation process continues on the field \texttt{year} that is a timestamp representation, then using the \texttt{DimensionDateModel} class we are able to perform this action computing year, month, quarter, timestamp. In Figure \ref{fig:DimensionDateModel} is shown the class diagram of this class:
+	\begin{figure}[htpb]
+		\centering
+		\includegraphics[width=\columnwidth]{images/dimension_date_model.png}
+		\caption{Dimension Date Model Object}
+		\label{fig:DimensionDateModel}
+	\end{figure}
+	
+	At the end of the transform process is possible have in RAM the software structure compliant with the Class Diagram shown in Figure \ref{fig: ORM_mapping}.\\
+	
+	
+	\subsubsection{Transform the coordinate according with the dimension location}
+	This is task requires some technical limitation to be accomplished:
+	\begin{itemize}
+		\item Rate limit to use Reverse Geocoding APIs.
+		\item Limited resources to install a local OpenStreetMap server or using a own database
+		\item Free APIs don't allow multiple requests per second then is not possible to use threading algorithms to perform this task
+	\end{itemize}
+	
+	This means that we need to optimize the algorithm to perform this transformation. Therefore we uses these criterias:
+	\begin{itemize}
+		\item Accuracy reduction of coordinates using one only decimal place, because in this manner we are able to recover the grandularity of our interest (State, Country and City), for more details see \href{https://en.wikipedia.org/wiki/Decimal_degrees#Precision}{Decimal Degrees Precision}
+		\item Using a cache system on the RAM to store all processed coordinate and then call the remote API \texttt{iff} the value is not present in the cache
+		\item Implemented an infinite Re-Try mechanism if a request fails, until it is not correctly processed
+		\item Avoid multiple and burst requests to the remote API server (Avoid to be blacklisted) 
+	\end{itemize}
+	The image in the Figure \ref{fig:flow_diagram_tranform_location} shown the Flow Chart releated at this phese:
+	\begin{figure}[htpb]
+		\centering
+		\includegraphics[width=\columnwidth]{images/flow_diagram_tranform_location.png}
+		\caption{Transformation Location: Flow Chart}
+		\label{fig:flow_diagram_tranform_location}
+	\end{figure}
+	
+	With this algorithm the transformation process requires around one hour and half to reverse the geolocation of all data (46K geolocations).
+	
+	In the Figure \ref{fig:DimensionLocationModel} is shown the releated class:
+	\begin{figure}[htpb]
+		\centering
+		\includegraphics[width=\columnwidth]{images/dimension_location_model.png}
+		\caption{Dimension Location Model Object}
+		\label{fig:DimensionLocationModel}
+	\end{figure}
+	
+	
+	\subsubsection{Transform the classification according with the dimension classification}
+
 	
 	\subsection{Load}
 	The Loader is the module responsible to load the data on the DWH, this is the reason why we decided that this module builds the mapping between the database and the software. In the Figure \ref{fig: ORM_mapping} is illustrated the mapping between the database tables and the software classes.\\ We used \texttt{SQLAlchemy} library to manage the DB schema.\\ This module is responsabile to:
@@ -228,11 +277,7 @@
 		\item \href{https://www.diag.uniroma1.it/~lenzerin/index.html/?q=node/53}{Data Management Course}
 		\item \href{https://web.pdx.edu/~ruzickaa/meteorites/papers/WeisbergEtal2006-classification.pdf}{Weisberg et al. (2006) Systematics and Evaluation of Meteorite Classification. In, Meteorites and the Early Solar System II, 19-52 (D.S. Lauretta and H.Y. McSween, Eds.), Univ. Arizona press}
 		\item \href{https://data.nasa.gov/Space-Science/Meteorite-Landings/gh4g-9sfh/about_data}{NASA's Open Data Portal}
-		\item \href{https://dev.socrata.com/docs/datatypes/location.html#}{Tyler Technologies - Socdata}
+		\item \href{https://photon.komoot.io/}{Photon - Open Street Map}
+		\item \href{https://en.wikipedia.org/wiki/Decimal_degrees#Precision}{Decimal Degrees Precision}
 	\end{itemize}
-	
-	
-	
-	
-	
 \end{document}
