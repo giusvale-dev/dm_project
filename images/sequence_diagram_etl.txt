@@ -7,8 +7,8 @@ ETL_Script <- Extractor : json_data
 ETL_Script -> Transformer : transform_json_data
 Transformer -> Transformer: clean_data
 Transformer -> Transformer: transform_data
-Transformer -> "Socrata Locator": get_location_by_lat_long
-Transformer <- "Socrata Locator": location
+Transformer -> "Photon - Open Street Map": get_location_by_lat_long
+Transformer <- "Photon - Open Street Map": location
 Transformer -> Transformer: transform_data
 ETL_Script <- Transformer : transformed_data
 ETL_Script -> Loader : load_transformed_data

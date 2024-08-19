@@ -12,7 +12,9 @@
 
 \begin{document}
 	
-	\title{Data Management \\ Project of a Data Warehouse System for Analyzing Meteorite Landings by NASA}
+	\title{Data Management \\Design and Implementation of a Data Warehouse System for Analyzing NASA Meteorite Landings
+		
+	}
 	
 	\author{
 		\IEEEauthorblockN{Giuseppe Valente - Natalia Maria Mucha}
@@ -138,12 +140,12 @@
 	
 	Details of these modules are described in the following sections.
 	\subsection{Extract}
-    Extraction is the process that allows us to obtain data from sources, and we know that this operation can be either static (generally used when the DWH needs to be populated for the first time) or incremental (used to update the DWH regularly). Since our datasets are not updated at regular intervals, we have decided to implement only static extraction. If an update is required, we will back up the previous DWH and then populate a new DWH system.\\ The extractor has 2 mainly problems to solve:
+   Extraction is the process of obtaining data from sources, which can be either static (typically used for initial population of the data warehouse) or incremental (used for regular updates). Since our datasets are not updated at regular intervals, we have chosen to implement only static extraction. If an update is required, we will back up the previous data warehouse and then populate a new data warehouse system.
     \begin{itemize}
     	\item Navigate through the API pagination, to retrieve all data
     	\item Produce the raw object contained all data read by NASA
     \end{itemize}
-    The Extractor class manages pagination by adjusting the offset parameter in its API requests. This ensures that all available data is retrieved by making multiple requests, each fetching a different segment of the data.
+    The \texttt{Extractor} class manages pagination by adjusting the offset parameter in its API requests. This ensures that all available data is retrieved by making multiple requests, each fetching a different segment of the data.
     The NASA dataset contains the information shown in the table \ref{tab:nasa_dataset}:
     \begin{table}[httb]
     	\centering
@@ -172,16 +174,18 @@
 	\end{figure}
 
 	\subsection{Transform}
-	This process is computed by the \texttt{Transformer} class that provide a suite of methods to perform the transform process.\\ This class needs the raw data from the \texttt{Executor} to perform the following tasks:
+	This process is handled by the \texttt{Transformer} class that provide a suite of methods to perform the transformation.\\ This class requires the raw data from the \texttt{Extractor} to execute the following tasks:
 	\begin{enumerate}
-		\item Remove all meteorites containing not valid values
-		\item Transform the filed \texttt{year} according with the dimension Date
-		\item Transform the coordinate according with the dimension location
-		\item Transform the classification according with the dimension classification
+		\item Remove meteorites with invalid values
+		\item Transform the \texttt{year} field according to the Date dimension
+		\item Transform the coordinates according to the Location dimension
+		\item Transform the classification according to the Classification dimension
 	\end{enumerate}
 	
+	At the end of the transform process is possible have in RAM the software structure compliant with the Class Diagram shown in Figure \ref{fig: ORM_mapping}.\\
+	
 	\subsubsection{Remove all meteorites containing not valid values}
-	This task is computed by the private function \texttt{clean}. This method returns a \texttt{MeteoriteLandingRaw} if the object can be transformed or a null value if the object is not valid. This function checks if the required fields are not null, empty and if the Geo Location coordinates can be suitable or not (are in the continents boundary and are not in a remote area).
+	This task is handled by the private method \texttt{clean}. This method returns a \texttt{MeteoriteLandingRaw} object if the raw data can be transformed, or a null value if the raw data is not valid. The function checks that the required fields are not null or empty and if the Geo Location coordinates can be suitable or not (are in the continents boundary and are not in a remote area).
 	In figure \ref{fig:MeteoriteLandingRaw} is shown the \texttt{MeteoriteLandingRaw}
 	\begin{figure}[htpb]
 		\centering
@@ -189,7 +193,6 @@
 		\caption{Meteorite Landing Raw Object}
 		\label{fig:MeteoriteLandingRaw}
 	\end{figure}
-	
 	
 	\subsubsection{Date transformation}
 	The transformation process continues on the field \texttt{year} that is a timestamp representation, then using the \texttt{DimensionDateModel} class we are able to perform this action computing year, month, quarter, timestamp. In Figure \ref{fig:DimensionDateModel} is shown the class diagram of this class:
@@ -200,25 +203,23 @@
 		\label{fig:DimensionDateModel}
 	\end{figure}
 	
-	At the end of the transform process is possible have in RAM the software structure compliant with the Class Diagram shown in Figure \ref{fig: ORM_mapping}.\\
-	
-	
+
 	\subsubsection{Transform the coordinate according with the dimension location}
-	This is task requires some technical limitation to be accomplished:
+	This is task faces some technical limitations:
 	\begin{itemize}
-		\item Rate limit to use Reverse Geocoding APIs.
-		\item Limited resources to install a local OpenStreetMap server or using a own database
-		\item Free APIs don't allow multiple requests per second then is not possible to use threading algorithms to perform this task
+		\item Rate limits on using Reverse Geocoding APIs.
+		\item Limited resources for installing a local OpenStreetMap server or using a private database
+		\item Free APIs do not permit multiple requests per second, making it impractical to use threading algorithms for this task.
 	\end{itemize}
 	
-	This means that we need to optimize the algorithm to perform this transformation. Therefore we uses these criterias:
+	To address these limitations, we optimize the algorithm for this transformation using the following criteria:
 	\begin{itemize}
-		\item Accuracy reduction of coordinates using one only decimal place, because in this manner we are able to recover the grandularity of our interest (State, Country and City), for more details see \href{https://en.wikipedia.org/wiki/Decimal_degrees#Precision}{Decimal Degrees Precision}
-		\item Using a cache system on the RAM to store all processed coordinate and then call the remote API \texttt{iff} the value is not present in the cache
-		\item Implemented an infinite Re-Try mechanism if a request fails, until it is not correctly processed
-		\item Avoid multiple and burst requests to the remote API server (Avoid to be blacklisted) 
+		\item Reduce the accuracy of coordinates to one decimal place. This approach allows us to achieve the desired granularity (State, Country, and City). For more details, see \href{https://en.wikipedia.org/wiki/Decimal_degrees#Precision}{Decimal Degrees Precision}. \href{https://en.wikipedia.org/wiki/Decimal_degrees#Precision}{Decimal Degrees Precision}
+		\item Use a RAM-based cache system to store all processed coordinates, making remote API calls only if the value is not present in the cache.
+		\item Implement an infinite retry mechanism for failed requests, continuing until the request is successfully processed.
+		\item Avoid making multiple and burst requests to the remote API server to prevent being blacklisted. 
 	\end{itemize}
-	The image in the Figure \ref{fig:flow_diagram_tranform_location} shown the Flow Chart releated at this phese:
+	The Figure \ref{fig:flow_diagram_tranform_location} shows the Flow Chart releated at this phese:
 	\begin{figure}[htpb]
 		\centering
 		\includegraphics[width=\columnwidth]{images/flow_diagram_tranform_location.png}
@@ -226,7 +227,8 @@
 		\label{fig:flow_diagram_tranform_location}
 	\end{figure}
 	
-	With this algorithm the transformation process requires around one hour and half to reverse the geolocation of all data (46K geolocations).
+	With this algorithm, the transformation process takes approximately one and a half hours to reverse geolocate all 46.000 data points.
+	
 	
 	In the Figure \ref{fig:DimensionLocationModel} is shown the releated class:
 	\begin{figure}[htpb]
@@ -238,14 +240,21 @@
 	
 	
 	\subsubsection{Transform the classification according with the dimension classification}
-
+	This transformation is performed using a support class that reads the reclass field from NASA and computes the correct hierarchy, inserting the group, class, material type, chemical composition, and other relevant details for each meteorite.
+	\begin{figure}[htpb]
+		\centering
+		\includegraphics[width=\columnwidth]{images/dimension_classification.png}
+		\caption{Dimension Classification Model Object}
+		\label{fig: DimensionClassificationModel}
+	\end{figure}
+	
 	
 	\subsection{Load}
-	The Loader is the module responsible to load the data on the DWH, this is the reason why we decided that this module builds the mapping between the database and the software. In the Figure \ref{fig: ORM_mapping} is illustrated the mapping between the database tables and the software classes.\\ We used \texttt{SQLAlchemy} library to manage the DB schema.\\ This module is responsabile to:
+	The Loader is the module responsible to load the data on the DWH, this is the reason why we decided that this module builds the mapping between the database and the software. Figure \ref{fig: ORM_mapping} illustrates the mapping between the database tables and the software classes.\\ We used \texttt{SQLAlchemy} library to manage the DB schema.\\ This module is responsabile to:
 	\begin{itemize}
 		\item Enstablish a database connection with the DWH
-		\item Mapping using the ORM approach the software layer with the database layer
-		\item Insert atomically the data retrieved from the Transaltor to the right tables
+		\item Mapping the software layer to the database layer using an ORM approach
+		\item Atomically inserting data retrieved from the Transformer into the appropriate tables to the right tables.
 	\end{itemize}
 	
 	\begin{figure}[htpb]
@@ -256,22 +265,77 @@
 	\end{figure}
 		
 	\section{Conclusion}
-	At the end of this work we have the DWH that can be queried through the SQL queries or other clients. For example it is possible to have a multidimensional view of data joining the fact table to its dimensions tables:\\
+	At the end of this work we have the DWH that can be queried through the SQL queries for data analysis. For example it is possible to have a multidimensional view of data joining the fact table to its dimensions tables:\\
 	\begin{verbatim}
-		SELECT *
-		FROM Meteorite AS FT, 
-		Location AS DT1, 
-		Date AS DT2, 
-		Classification AS DT3
+		SELECT * 
+		FROM 
+			meteorite AS FT, 
+			location AS DT1, 
+			date AS DT2, 
+			classification AS DT3
 		WHERE 
-		FT.Location = DT1.id AND 
-		FT.Date = DT2.id AND
-		FT.Classification = DT3.id
+			FT.id_location = DT1.id AND 
+			FT.id_date = DT2.id AND
+			FT.id_classification = DT3.id
+	\end{verbatim}
+	Obviously, it is possible to use OLAP queries to perform analysis through operations such as roll-up, drill-down, slice, and dice. The following queries provide simple examples:
+	
+	\begin{verbatim}
+	-- ROLL UP
+	SELECT
+		l.country,
+		SUM(m.mass) AS total_mass,
+		COUNT(DISTINCT c.chemical_composition) AS distinct_compositions
+	FROM
+		meteorite m
+	JOIN
+		location l ON m.id_location = l.id
+	JOIN
+		classification c ON c.id = m.id_classification
+	GROUP BY
+		l.country
+	ORDER BY
+		l.country
+	\end{verbatim}
+	\begin{verbatim}
+	-- DRILL-DOWN
+	SELECT
+		l.country,
+		SUM(m.mass) AS total_mass,
+		COUNT(DISTINCT c.chemical_composition) AS distinct_compositions
+	FROM
+		meteorite m
+	JOIN
+		location l ON m.id_location = l.id
+	JOIN
+		classification c ON c.id = m.id_classification
+	GROUP BY
+		l.country
+	ORDER BY
+		l.country
+	\end{verbatim}
+	\begin{verbatim}
+	-- SLICE
+	SELECT
+		l.state,
+		SUM(m.mass) AS total_mass,
+		COUNT(DISTINCT c.chemical_composition) AS distinct_compositions
+	FROM
+		meteorite m
+	JOIN
+		location l ON m.id_location = l.id
+	JOIN
+		classification c ON c.id = m.id_classification
+	WHERE
+		l.country = 'Italia'
+	GROUP BY
+		l.state
+	ORDER BY
+		l.state;
 	\end{verbatim}
 	
-	
 	\section{Source code}
-	
+	The source code is available on the \href{https://github.com/giusvale-dev/meteorite_landings_etl}{GIT Hub repository}
 	\section{Reference}
 	\begin{itemize}
 		\item \href{https://www.diag.uniroma1.it/~lenzerin/index.html/?q=node/53}{Data Management Course}
@@ -279,5 +343,6 @@
 		\item \href{https://data.nasa.gov/Space-Science/Meteorite-Landings/gh4g-9sfh/about_data}{NASA's Open Data Portal}
 		\item \href{https://photon.komoot.io/}{Photon - Open Street Map}
 		\item \href{https://en.wikipedia.org/wiki/Decimal_degrees#Precision}{Decimal Degrees Precision}
+		\item \href{https://docs.sqlalchemy.org/en/20/}{SQL Alchemy}
 	\end{itemize}
 \end{document}
